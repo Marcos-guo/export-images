@@ -1,4 +1,4 @@
-name: Export Images
+name: Export Runner
 
 on:
   workflow_dispatch:
@@ -7,60 +7,33 @@ jobs:
   export:
     runs-on: ubuntu-latest
     steps:
-      - name: Find and pull images
+      - name: Find robusta-runner
         run: |
           mkdir -p images
           
-          # 测试 robusta-runner 的候选名
-          RUNNER=""
           for img in \
+            "robustadev/robusta-runner:v0.44.0" \
+            "robustadev/robusta-runner:0.44.0" \
             "robusta/robusta-runner:latest" \
-            "robusta-dev/robusta-runner:latest" \
             "ghcr.io/robusta-dev/robusta-runner:latest" \
-            "robustadev/robusta-runner:latest"
+            "ghcr.io/robusta-dev/robusta:latest" \
+            "robusta/robusta:latest"
           do
             echo "=== Trying: $img ==="
             if docker pull "$img"; then
               echo "SUCCESS: $img"
-              RUNNER="$img"
+              echo "$img" > images/runner-name.txt
+              docker save "$img" -o images/robusta-runner.tar
               break
             fi
           done
           
-          # 测试 holmes 的候选名
-          HOLMES=""
-          for img in \
-            "robusta/holmes:latest" \
-            "robusta-dev/holmes:latest" \
-            "ghcr.io/robusta-dev/holmes:latest" \
-            "robustadev/holmes:latest"
-          do
-            echo "=== Trying: $img ==="
-            if docker pull "$img"; then
-              echo "SUCCESS: $img"
-              HOLMES="$img"
-              break
-            fi
-          done
-          
-          # 保存找到的名字
-          echo "RUNNER=$RUNNER" > images/result.txt
-          echo "HOLMES=$HOLMES" >> images/result.txt
-          cat images/result.txt
-          
-          # 导出 tar
-          if [ -n "$RUNNER" ]; then
-            docker save "$RUNNER" -o images/robusta-runner.tar
-          fi
-          if [ -n "$HOLMES" ]; then
-            docker save "$HOLMES" -o images/holmes.tar
-          fi
-          
+          cat images/runner-name.txt 2>/dev/null || echo "ALL FAILED"
           ls -lh images/
 
-      - name: Upload artifacts
+      - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: robusta-images
+          name: runner-image
           path: images/
           retention-days: 7
