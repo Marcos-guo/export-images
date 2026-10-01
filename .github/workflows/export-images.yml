@@ -1,0 +1,24 @@
+name: Export Images
+
+on:
+  workflow_dispatch:
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pull and save images
+        run: |
+          mkdir -p images
+          docker pull us-docker.pkg.dev/robusta-container-registry/robusta-runner:latest
+          docker pull us-docker.pkg.dev/robusta-container-registry/holmes:latest
+          docker save us-docker.pkg.dev/robusta-container-registry/robusta-runner:latest -o images/robusta-runner.tar
+          docker save us-docker.pkg.dev/robusta-container-registry/holmes:latest -o images/holmes.tar
+          ls -lh images/
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: robusta-images
+          path: images/
+          retention-days: 7
